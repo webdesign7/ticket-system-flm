@@ -5,13 +5,16 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
+use App\Services\TextMessageService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
@@ -35,6 +38,13 @@ class UserResource extends Resource
                     ->email()
                     ->unique(ignoreRecord: true)
                     ->placeholder('Enter the user email'),
+                Forms\Components\TextInput::make('password')
+                    ->label('Password')
+                    ->required()
+                    ->password()
+                    ->confirmed('password_confirmation')
+                    ->hiddenOn(['edit'])
+                    ->placeholder('Enter the user password'),
             ]);
     }
 
@@ -58,6 +68,25 @@ class UserResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('sendBulkSms')
+                        ->modalSubmitActionLabel('Send SMS')
+                        ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                        ->form([
+                            Forms\Components\Textarea::make('message')
+                                ->label('Message')
+                                ->placeholder('Enter the message'),
+                            Forms\Components\Textarea::make('remarks')
+                            ]
+                        )->action(
+                            function (array $data, Collection $collection) {
+                                TextMessageService::sendBulkSms($data, $collection);
+                                Notification::make()
+                                    ->title('SMS sent successfully')
+                                    ->success()
+                                    ->send();
+                            }
+                        ),
+
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

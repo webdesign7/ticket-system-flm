@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -32,6 +33,7 @@ class TicketResource extends Resource
                     ->placeholder('Enter the ticket title'),
                 Forms\Components\Textarea::make('description')
                     ->rows(3),
+                FileUpload::make('attachment'),
                 Forms\Components\Select::make('status')
                     ->options(self::$model::STATUS)->required(),
                 Forms\Components\Select::make('priority')
@@ -63,8 +65,8 @@ class TicketResource extends Resource
                     ->description(fn(Ticket $record) :?string => $record->description)
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->badge(),
+                Tables\Columns\SelectColumn::make('status')
+                    ->options(self::$model::STATUS),
                 Tables\Columns\TextColumn::make('priority')
                     ->colors([
                         'warning' => self::$model::PRIORITY['medium'],

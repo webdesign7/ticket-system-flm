@@ -1,31 +1,34 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Livewire;
 
 use App\Models\Role;
 use App\Models\Ticket;
-use Filament\Tables;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
+use Filament\Tables;
+use Livewire\Component;
+use Filament\Tables\Contracts\HasTable;
 
-class LatestTickets extends BaseWidget
+class ListTickets extends Component implements HasForms, HasTable
 {
-    protected int | string | array $columnSpan = 'full';
+    use InteractsWithTable;
+    use InteractsWithForms;
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                auth()->user()?->hasRole(Role::ROLES['admin']) ? Ticket::query() : Ticket::where('assigned_to', auth()->id())
-            )
+            ->query(Ticket::query())
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->description(fn(Ticket $record) :?string => $record->description)
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->badge(),
+                Tables\Columns\SelectColumn::make('status')
+                    ->options(Ticket::STATUS),
                 Tables\Columns\TextColumn::make('priority')
                     ->colors([
                         'warning' => Ticket::PRIORITY['medium'],
@@ -43,6 +46,27 @@ class LatestTickets extends BaseWidget
                     ->dateTime()
                     ->sortable(),
 
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(Ticket::STATUS)
+                    ->label('Status'),
+                Tables\Filters\SelectFilter::make('priority')
+                    ->options(Ticket::PRIORITY)
+                    ->label('Priority'),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ]);
+    }
+
+    public function render()
+    {
+        return view('livewire.list-tickets');
     }
 }
